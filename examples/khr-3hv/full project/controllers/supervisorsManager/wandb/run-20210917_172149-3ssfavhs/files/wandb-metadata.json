@@ -1,0 +1,22 @@
+{
+    "os": "Linux-5.11.0-27-generic-x86_64-with-glibc2.17",
+    "python": "3.8.10",
+    "heartbeatAt": "2021-09-17T15:21:52.571384",
+    "startedAt": "2021-09-17T15:21:49.374429",
+    "docker": null,
+    "cpu_count": 8,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "program": "supervisorsManager.py",
+    "codePath": "examples/khr-3hv/full project/controllers/supervisorsManager/supervisorsManager.py",
+    "git": {
+        "remote": "https://github.com/NickKok/deepbots-stable",
+        "commit": "e4f06f6a3d8a494eedd0c7fbc02709b056f0bad0"
+    },
+    "email": "nikoskokkini@gmail.com",
+    "root": "/home/nick/Documents/deepbots-stable",
+    "host": "hostname",
+    "username": "nick",
+    "executable": "/home/nick/miniconda3/envs/deepbots/bin/python"
+}

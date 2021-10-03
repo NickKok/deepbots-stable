@@ -1,6 +1,6 @@
 # khr-3hv: Robot-Supervisor Tutorial
 
-![Solved cartpole demonstration](images/khr-3hv.gif)
+![khr-3hv demonstration](images/khr-3hv.gif)
 
 This tutorial shows the creation of the [humanoid](https://gym.openai.com/envs/Humanoid-v2/) problem using the updated
 version of the [*deepbots framework*](https://github.com/aidudezzz/deepbots), utilizing the 

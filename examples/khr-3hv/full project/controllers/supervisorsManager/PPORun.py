@@ -1,8 +1,4 @@
-import numpy as np
-from scipy.ndimage.interpolation import shift
 import wandb
-
-from deepbots.supervisor.controllers.robot_supervisor import RobotSupervisor
 
 from stable_baselines3 import PPO
 from stable_baselines3.common.env_checker import  check_env
@@ -12,11 +8,8 @@ from typing import Callable
 import ray
 from ray import tune
 from ray.tune.registry import register_env
-from ray.tune import grid_search
 import ray.rllib.agents.ppo as ppo
-from ray.tune.logger import DEFAULT_LOGGERS
 from ray.tune.integration.wandb import WandbLoggerCallback
-from ray.tune.integration.wandb import wandb_mixin
 
 from khr3hvEnv import khr3hvRobotSupervisor
 
@@ -42,7 +35,7 @@ def linear_schedule(initial_value: float) -> Callable[[float], float]:
 
     return func         
             
-def run(projectName, wandbSaveFreq, train, useRay, output, args):
+def run(projectName, wandbSaveFreq, train, trained_model, useRay, output, **args):
 
     if useRay:
         # Register the enviroment to be used by Ray
@@ -55,20 +48,20 @@ def run(projectName, wandbSaveFreq, train, useRay, output, args):
                     "fcnet_hiddens": [256, 256],
                     "fcnet_activation": "relu", # tanh or relu
                 },
-                "lr": args.lr,
+                "lr": args["lr"],
                 "framework": "torch",
-                "gamma": args.gamma,
-                "lambda": args.gae_lambda,
-                "clip_param": args.clip_param,
-                "kl_coeff": args.kl_coeff,
-                "num_sgd_iter": args.num_sgd_iter,
-                "sgd_minibatch_size": args.sgd_minibatch_size,
+                "gamma": args["gamma"],
+                "lambda": args["gae_lambda"],
+                "clip_param": args["clip_param"],
+                "kl_coeff": args["kl_coeff"],
+                "num_sgd_iter": args["num_sgd_iter"],
+                "sgd_minibatch_size": args["sgd_minibatch_size"],
                 "horizon": 200,
-                "train_batch_size": args.train_batch_size,
-                "num_workers": args.num_workers,
-                "num_gpus": args.num_gpus,
-                "batch_mode": args.batch_mode,
-                "observation_filter": args.observation_filter
+                "train_batch_size": args["train_batch_size"],
+                "num_workers": args["num_workers"],
+                "num_gpus": args["num_gpus"],
+                "batch_mode": args["batch_mode"],
+                "observation_filter": args["observation_filter"]
                 }
         # Stop criteria for training
         stop = {
@@ -91,10 +84,11 @@ def run(projectName, wandbSaveFreq, train, useRay, output, args):
                             )
             ray.shutdown()
         else:
+            ray.init()
             # Crate an agent having the predifined model hyperparameters
             agent = ppo.PPOTrainer(config=model_config)
             # Restore the train weights
-            agent.restore("./results/Deepbots-khr3hv-Ray-reward-weight,prev_pos,obs-x,y,z,vel-done-0.5-RNN-5,clip_range-0.2,lr-0.0001_6778500_steps")
+            agent.restore(trained_model)
             
             # Use the enviroment of khr3hv Robot
             khr3hv_env = khr3hvRobotSupervisor(projectName, wandbSaveFreq, train, useRay) 
@@ -132,13 +126,13 @@ def run(projectName, wandbSaveFreq, train, useRay, output, args):
             check_env(khr3hv_env) 
             # Declare PPO agent with predifined hyperparameters
             model = PPO("MlpPolicy", khr3hv_env, verbose=1, policy_kwargs=policy_kwargs,
-                        clip_range=args.clip_param, gamma=args.gamma, gae_lambda=args.gae_lambda,
-                        learning_rate=args.lr)
+                        clip_range=args["clip_param"], gamma=args["gamma"], gae_lambda=args["gae_lambda"],
+                        learning_rate=args["lr"])
             # Train the agent and use the callback function to save the agent weights at a given time
             model.learn(total_timesteps=100000000, callback=checkpoint_callback)
         else:
             # Load the weights of a trained Agent
-            model = PPO.load("./results/Deepbots-khr3hv-SB-reward-weight,prev_pos,obs-x,y,z,vel-done-0.5-RNN-5,clip_range-0.2,lr-0.0001_6778500_steps")
+            model = PPO.load(trained_model)
 
             # Reset the enviroment and test the trained agent
             obs = khr3hv_env.reset()

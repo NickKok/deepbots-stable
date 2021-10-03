@@ -3,7 +3,7 @@ from scipy.ndimage.interpolation import shift
 
 from RobotUtils import RobotFunc
 from deepbots.supervisor.controllers.robot_supervisor import RobotSupervisor
-from gym.spaces import Box, Discrete
+from gym.spaces import Box
 
 import wandb 
 
@@ -64,8 +64,8 @@ class khr3hvRobotSupervisor(RobotSupervisor):
         maxObs = np.inf * np.ones(self.t * self.numObs)
         self.observation_space = Box(low=lowObs, high=maxObs, dtype=np.float64)
         # Lower and maximum values on action space
-        lowAct = -2.356 * np.ones(6)
-        maxAct = 2.356 * np.ones(6)
+        lowAct = -1 * np.ones(6)
+        maxAct = 1 * np.ones(6)
         self.action_space = Box(low=lowAct, high=maxAct, dtype=np.float64)
 
         # Set up various robot components
@@ -75,6 +75,8 @@ class khr3hvRobotSupervisor(RobotSupervisor):
         self.motorPositionArr = np.zeros(6)
         self.episodeScore = 0  # Score accumulated during an episode
         self.prev_pos = self.robot.getPosition()[2]
+        self.last_actions = np.zeros(6)
+        self.counter_actions = 0
 
         # Logging parameters
         self.distance_walk = 0
@@ -171,12 +173,15 @@ class khr3hvRobotSupervisor(RobotSupervisor):
         :param action: The list that contains the action value
         :type action: list of float
         """
-        motorIndexes = [0, 1, 2, 3, 4, 5]
+        if self.counter_actions % 10 == 0:
+            self.counter_actions += 1
+            self.last_actions = action * 2.356
 
-        for i, ac in zip(motorIndexes, action):
-            self.motorPositionArr[i] += ac
-            self.motorList[i].setVelocity(self.motor_velocity)
-            self.motorList[i].setPosition(ac)
+        for i, ac in enumerate(self.last_actions):
+                self.motorPositionArr[i] += ac
+                self.motorList[i].setVelocity(self.motor_velocity)
+                self.motorList[i].setPosition(ac)
+
 
     def setup_agent(self):
         """
